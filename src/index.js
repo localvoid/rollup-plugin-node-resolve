@@ -43,6 +43,7 @@ export default function nodeResolve ( options = {} ) {
 	const isPreferBuiltinsSet = options.preferBuiltins === true || options.preferBuiltins === false;
 	const preferBuiltins = isPreferBuiltinsSet ? options.preferBuiltins : true;
 	const customResolveOptions = options.customResolveOptions || {};
+	const mainFields = options.mainFields || [];
 	const jail = options.jail;
 	const only = Array.isArray(options.only)
 		? options.only.map(o => o instanceof RegExp
@@ -58,8 +59,18 @@ export default function nodeResolve ( options = {} ) {
 		throw new Error( 'options.skip is no longer supported — you should use the main Rollup `external` option instead' );
 	}
 
-	if ( !useModule && !useMain && !useJsnext ) {
+	if ( mainFields.length === 0 && !useModule && !useMain && !useJsnext ) {
 		throw new Error( `At least one of options.module, options.main or options.jsnext must be true` );
+	}
+
+	if ( useModule ) {
+		mainFields.push('module');
+	}
+	if ( useJsnext ) {
+		mainFields.push('jsnext:main');
+	}
+	if ( useMain ) {
+		mainFields.push('main');
 	}
 
 	let preserveSymlinks;
@@ -135,12 +146,16 @@ export default function nodeResolve ( options = {} ) {
 
 						if (options.browser && typeof pkg[ 'browser' ] === 'string') {
 							pkg[ 'main' ] = pkg[ 'browser' ];
-						} else if ( useModule && pkg[ 'module' ] ) {
-							pkg[ 'main' ] = pkg[ 'module' ];
-						} else if ( useJsnext && pkg[ 'jsnext:main' ] ) {
-							pkg[ 'main' ] = pkg[ 'jsnext:main' ];
-						} else if ( ( useJsnext || useModule ) && !useMain ) {
+						} else {
 							disregardResult = true;
+							for ( let i = 0; i < mainFields.length; i++ ) {
+								const field = mainFields[i];
+								if (pkg[ field ]) {
+									pkg[ 'main' ] = pkg[ field ];
+									disregardResult = false;
+									break;
+								}
+							}
 						}
 						return pkg;
 					},

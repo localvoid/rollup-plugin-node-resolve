@@ -37,6 +37,9 @@ export default {
       // – see https://github.com/rollup/rollup-plugin-commonjs
       main: true,  // Default: true
 
+      // use this fields to resolve a main field
+      mainFields: ["es2015", "module", "main"],  // Default: undefined
+
       // some package.json files have a `browser` field which
       // specifies alternative files to load for people bundling
       // for the browser. If that's you, use this option, otherwise
